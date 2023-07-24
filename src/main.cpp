@@ -10,20 +10,51 @@
 #include <boost/asio/ts/internet.hpp>
 #include <boost/asio/error.hpp>
 
-std::string httpGetIndex()
+std::string httpGetIndexRequest()
 {
     return "GET /index.html HTTP/1.1\r\n"
            "Host: example.com\r\n"
            "Connection: close\r\n\r\n";
 }
 
+std::vector<uint8_t> vBuffer(1024);
+
+void grabSomeData(boost::asio::ip::tcp::socket& socket)
+{
+    std::cout << "grabSomeData entry\n";
+
+    socket.async_read_some(boost::asio::buffer(vBuffer.data(), vBuffer.size()),
+        [&](boost::system::error_code errCode, std::size_t length)
+        {
+            if (!errCode)
+            {
+                std::cout << "\n\nRead" << length << " bytes\n\n";
+                
+                for(int i = 0; i < length; i++)
+                {
+                    std::cout << vBuffer[i];
+                }
+
+                grabSomeData(socket);
+            }
+            else
+            {
+                std::cout << "grabSomeData errCode: " << errCode << "\n";
+            }
+        }
+    );    
+}
+
+
 int main()
 {
 
     boost::asio::io_context context;
 
+    // start context (context need tasks to work on)
+    std::thread threadContext = std::thread([&]() { context.run(); });
 
-    std::string address = "51.38.81.49"; // example.com
+    std::string address = "93.184.216.34"; // example.com
     int32_t port  = 80;
     boost::system::error_code errorCode;
      
@@ -47,7 +78,10 @@ int main()
     {
         std::cout << "socket is open!\n";
 
-        std::string sRequest = httpGetIndex();
+        // prepare task before request for data
+        grabSomeData(socket); // prime context with work to do (it's own thread)
+
+        std::string sRequest = httpGetIndexRequest();
 
         socket.write_some(boost::asio::buffer(sRequest.data(), sRequest.size()), errorCode);
 
@@ -58,22 +92,13 @@ int main()
 
         std::cout << "write_some errCode: " << errorCode.message() << "\n";
 
-        size_t bytesAvalible = socket.available();
-        std::cout << "Bytes avalible on socket: " << bytesAvalible << "\n";
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(2000ms);
 
-        if (bytesAvalible)
-        {
-            std::vector<uint8_t> vBuffer(bytesAvalible);
-
-            socket.read_some(boost::asio::buffer(vBuffer.data(), vBuffer.size()), errorCode);
-
-            for (auto d : vBuffer)
-            {
-                std::cout << d;
-            }
-            
-            std::cout << "\n";
-        }
+        context.stop();
+        
+        if(threadContext.joinable()) 
+            threadContext.join();
     }
     else
     {
