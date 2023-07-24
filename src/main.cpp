@@ -1,8 +1,10 @@
 #include <iostream>
 
 #include <string>
-#include <boost/system/error_code.hpp>
+#include <thread>
+#include <chrono>
 
+#include <boost/system/error_code.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ts/buffer.hpp>
 #include <boost/asio/ts/internet.hpp>
@@ -29,6 +31,8 @@ int main()
 
     boost::asio::ip::tcp::socket socket(context);
 
+    socket.connect(endpoint, errorCode);
+
     if (!errorCode)
     {
         std::cout << "Connected to \"" << address << ":" << port << "\"!" << std::endl;
@@ -49,6 +53,9 @@ int main()
 
         // loading data from socket
 
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(200ms);
+
         std::cout << "write_some errCode: " << errorCode.message() << "\n";
 
         size_t bytesAvalible = socket.available();
@@ -60,10 +67,12 @@ int main()
 
             socket.read_some(boost::asio::buffer(vBuffer.data(), vBuffer.size()), errorCode);
 
-            for (std::vector<uint8_t>::const_iterator it; it != vBuffer.end(); it++)
+            for (auto d : vBuffer)
             {
-                std::cout << *it << "\n";
+                std::cout << d;
             }
+            
+            std::cout << "\n";
         }
     }
     else
