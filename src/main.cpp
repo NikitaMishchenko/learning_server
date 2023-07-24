@@ -1,8 +1,10 @@
 #include <iostream>
 
 #include <string>
-#include <boost/system/error_code.hpp>
+#include <thread>
+#include <chrono>
 
+#include <boost/system/error_code.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ts/buffer.hpp>
 #include <boost/asio/ts/internet.hpp>
@@ -51,6 +53,9 @@ int main()
 
         // loading data from socket
 
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(200ms);
+
         std::cout << "write_some errCode: " << errorCode.message() << "\n";
 
         size_t bytesAvalible = socket.available();
@@ -66,6 +71,8 @@ int main()
             {
                 std::cout << d;
             }
+            
+            std::cout << "\n";
         }
     }
     else
