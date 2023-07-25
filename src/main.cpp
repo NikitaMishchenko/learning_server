@@ -13,24 +13,31 @@
 std::string httpGetIndexRequest()
 {
     return "GET /index.html HTTP/1.1\r\n"
-           "Host: example.com\r\n"
+           "Host: david-barr.co.uk\r\n"
            "Connection: close\r\n\r\n";
 }
 
-std::vector<uint8_t> vBuffer(1024);
+std::vector<char> vBuffer(20 * 1024);
 
 void grabSomeData(boost::asio::ip::tcp::socket& socket)
 {
     std::cout << "grabSomeData entry\n";
 
+    // using namespace std::chrono_literals;
+    // std::this_thread::sleep_for(200ms);
+
+    std::cout << socket.available() << "\n";
+
     socket.async_read_some(boost::asio::buffer(vBuffer.data(), vBuffer.size()),
         [&](boost::system::error_code errCode, std::size_t length)
         {
+            std::cout << "lambda async read action!\n";
+
             if (!errCode)
             {
                 std::cout << "\n\nRead" << length << " bytes\n\n";
                 
-                for(int i = 0; i < length; i++)
+                for (int i = 0; i < length; i++)
                 {
                     std::cout << vBuffer[i];
                 }
@@ -43,6 +50,7 @@ void grabSomeData(boost::asio::ip::tcp::socket& socket)
             }
         }
     );    
+
 }
 
 
@@ -51,11 +59,17 @@ int main()
 
     boost::asio::io_context context;
 
+    /* if starting from here it does not work! why ???
     // start context (context need tasks to work on)
-    std::thread threadContext = std::thread([&]() { context.run(); });
+    std::thread threadContext = std::thread([&]()
+                                           {
+                                           std::cout << "run context thread\n";
+                                           context.run(); 
+                                           });
+    */ 
 
-    std::string address = "93.184.216.34"; // example.com
-    int32_t port  = 80;
+    std::string address = "51.38.81.49"; // "93.184.216.34" example.com
+    int32_t port        = 80;
     boost::system::error_code errorCode;
      
     boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::make_address(address, errorCode), port);
@@ -73,7 +87,6 @@ int main()
         std::cout << "Filed to connect to address: " << errorCode.message() << std::endl;
     }
 
-
     if (socket.is_open())
     {
         std::cout << "socket is open!\n";
@@ -83,12 +96,45 @@ int main()
 
         std::string sRequest = httpGetIndexRequest();
 
+        std::cout << "prepared request:\n" << sRequest << "\n";
+
         socket.write_some(boost::asio::buffer(sRequest.data(), sRequest.size()), errorCode);
+
+        /*
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(200ms);
+        socket.wait(socket.wait_read);
+        
+        int bytesAvalible = socket.available();
+        std::cout << "bytes avalible on socket: " << bytesAvalible << "\n";
+
+        if (bytesAvalible)
+        {
+            std::vector<char> buff(bytesAvalible);
+
+            socket.read_some(boost::asio::buffer(buff.data(), buff.size()), errorCode);
+
+            std::cout << "read_some errCode: " << errorCode << "\n";
+            
+            for(auto d : buff)
+                std::cout << d;
+
+            std::cout << "\n******************END OF BUFF DATA, bytes were avalible " << bytesAvalible << "\n";
+
+        }*/
 
         // loading data from socket
 
-        using namespace std::chrono_literals;
-        std::this_thread::sleep_for(200ms);
+        //using namespace std::chrono_literals;
+        //std::this_thread::sleep_for(200ms);
+
+        // start context (context need tasks to work on)
+        std::thread threadContext = std::thread([&]()
+                                                {
+                                                    std::cout << "run context thread\n";
+                                                    context.run(); 
+                                                });
+
 
         std::cout << "write_some errCode: " << errorCode.message() << "\n";
 
@@ -97,7 +143,7 @@ int main()
 
         context.stop();
         
-        if(threadContext.joinable()) 
+        if (threadContext.joinable()) 
             threadContext.join();
     }
     else
