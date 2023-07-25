@@ -10,6 +10,9 @@
 #include <boost/asio/ts/internet.hpp>
 #include <boost/asio/error.hpp>
 
+#include "message.h"
+
+
 std::string httpGetIndexRequest()
 {
     return "GET /index.html HTTP/1.1\r\n"
