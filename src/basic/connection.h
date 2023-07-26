@@ -14,6 +14,12 @@ namespace tcp_communication
     class Connection : public std::enable_shared_from_this<Connection<T> >
     {
     public:
+        enum Owner
+        {
+            server,
+            client
+        }
+
         Connection() {}
         virtual ~Connection() {}
 
