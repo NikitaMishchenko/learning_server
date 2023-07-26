@@ -8,21 +8,18 @@
 #include <boost/asio.hpp>
 
 
-namespace mesage
+namespace message
 {
     template<typename T>
     struct Header
     {
-        T id();
+        T id;
         uint32_t size = 0; ///< total size of corresponding message
     };
 
     template<typename T>
     struct Message
     {
-        Header<T> m_header;
-        std::vector<uint8_t> m_body;
-
         size_t size() const
         {
             return sizeof(m_header) + m_body.size();
@@ -44,9 +41,11 @@ namespace mesage
         {
             static_assert(std::is_standard_layout<DataType>::value, "Data is too complex to ");
 
+            size_t msgSize = msg.m_body.size();
+
             msg.m_body.resize(msg.m_body.size() + sizeof(DataType));
 
-            std::memcpy(msg.m_body.data() + msg.m_body.size(), &data, sizeof(DataType));
+            std::memcpy(msg.m_body.data() + msgSize, &data, sizeof(DataType));
 
             msg.m_header.size = msg.size();
 
@@ -54,7 +53,7 @@ namespace mesage
         }
 
         template<typename DataType>
-        friend Message<T>& operator >> (Message<T>& msg, const DataType& data)
+        friend Message<T>& operator >> (Message<T>& msg, DataType& data)
         {
             static_assert(std::is_standard_layout<DataType>::value, "Data is too complex to ");
 
@@ -69,7 +68,8 @@ namespace mesage
             return msg;
         }
 
-
+        Header<T> m_header;
+        std::vector<char> m_body;
     };
 
 }
