@@ -11,6 +11,8 @@
 #include <boost/asio/error.hpp>
 
 #include "basic/message.h"
+#include "basic/client_interface.h"
+#include "basic/server.h"
 
 enum class CustomMessage : uint32_t
 {
@@ -20,7 +22,7 @@ enum class CustomMessage : uint32_t
 
 int main()
 {
-    message::Message<CustomMessage> msg;
+    tcp_communication::Message<CustomMessage> msg;
     msg.m_header.id = CustomMessage::TYPE_1;
 
     int a = 1;

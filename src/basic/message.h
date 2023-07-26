@@ -4,11 +4,9 @@
 #include <algorithm>
 #include <iostream>
 
-
 #include <boost/asio.hpp>
 
-
-namespace message
+namespace tcp_communication
 {
     template<typename T>
     struct Header
@@ -72,4 +70,4 @@ namespace message
         std::vector<char> m_body;
     };
 
-}
+} // tcp_communication
