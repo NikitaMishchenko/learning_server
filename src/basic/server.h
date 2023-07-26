@@ -15,25 +15,27 @@ namespace tcp_communication
     {
     public:
         IServer(uint16_t port)
-            : m_asioAcceptor(m_asioContext, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port))
+            : m_asioAcceptor(m_asioContext, boost::asio::ip::tcp::endpoint(boost::asio::ip::address::from_string("127.0.0.1"), port))
         {
-
         }
 
         virtual ~IServer()
         {
-            Stop();
+            stop();
         }
 
         virtual bool start()
         {
-            std::cout << "[SERVER] starting...\n";
+            std::cout << "[SERVER] starting at endpoint: " << m_asioAcceptor.local_endpoint() << "\n";
 
             try
             {
                 waitForClientConnection(); // work before
 
-                m_contextThread = std::thread([this](){m_asioContext.run();});
+                m_contextThread = std::thread([this](){
+                                                        std::cout << "waiting for clients...\n";
+                                                        m_asioContext.run();
+                                                     });
             
             }
             catch(const std::exception& e)
@@ -58,6 +60,8 @@ namespace tcp_communication
         // for ASIO context
         void waitForClientConnection()
         {
+            std::cout << "waitForClientConnection entry\n";
+
             m_asioAcceptor.async_accept(
                 [this](boost::system::error_code errCode, boost::asio::ip::tcp::socket socket)
                 {
@@ -65,8 +69,10 @@ namespace tcp_communication
                     { 
                         std::cout << "[SERVER] New Connection success: " << socket.remote_endpoint() << "\n";
 
+                        /* testing
                         std::shared_ptr<Connection<T>> = newConnection = 
                             std::make_shared<Connection<T>>(Connection<T>::owner::server, m_asioContext, std::moove(socket), m_msgsIn);
+                        
 
                         // possible connection deny
                         if (onClientConnetc(newConnection))    
@@ -81,6 +87,7 @@ namespace tcp_communication
                         {
                             std::cout << "[-----] Connection Denied\n";
                         }
+                        */
                     }
                     else
                     {
@@ -107,7 +114,7 @@ namespace tcp_communication
             }
         }
 
-        void messageAllClients(const Message<T> &msg, std::shared_ptr<Connection<T>> clientToIgnore = nuillptr)
+        void messageAllClients(const Message<T> &msg, std::shared_ptr<Connection<T>> clientToIgnore = nullptr)
         {
             bool isAnyInvalidCLientsExists = false;
 
@@ -132,7 +139,7 @@ namespace tcp_communication
         }
 
         // handle incomming message
-        void update(size_t nMaxMessages -1) ///< max at default
+        void update(size_t nMaxMessages = -1) ///< max at default
         {
             size_t nMessageCount = 0;
             while (nMessageCount < nMaxMessages && !m_msgsIn.empty())
@@ -148,21 +155,21 @@ namespace tcp_communication
     protected:
         virtual bool onClientConnect(std::shared_ptr<Connection<T>> client)
         {
+            return false;
         }
 
-        virtual bool onClientDisconnect(std::shared_ptr<Connection<T>> client)
+        virtual void onClientDisconnect(std::shared_ptr<Connection<T>> client)
         {
         }
 
         virtual bool onMessage(std::shared_ptr<Connection<T> > client, const Message<T> &msg)
         {
-            
         }
 
     private:
         ThreadSafeQueue<OwnedMessage<T>> m_msgsIn;
 
-        std::deque<std::shared_ptr<Connection<T>> m_connections; ///< validated conncections
+        std::deque<std::shared_ptr<Connection<T>>> m_connections; ///< validated conncections
 
         boost::asio::io_context m_asioContext;
         std::thread m_contextThread;

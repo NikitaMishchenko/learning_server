@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 
 #include <boost/asio.hpp>
 
@@ -11,30 +12,58 @@
 namespace tcp_communication
 {
     template <typename T>
-    class Connection : public std::enable_shared_from_this<Connection<T> >
+    class Connection : public std::enable_shared_from_this<Connection<T>>
     {
     public:
         enum Owner
         {
-            server,
-            client
-        }
+            SERVER,
+            CLIENET
+        };
 
-        Connection() {}
+        Connection(Owner owner,
+                   boost::asio::io_context &asioContext,
+                   boost::asio::ip::tcp::socket socket,
+                   ThreadSafeQueue<OwnedMessage<T>> &msgQueue)
+            : m_asioContext(asioContext), m_socket(std::move(socket)), m_messagesIn(msgQueue)
+        {
+            m_owner = owner;
+        }
         virtual ~Connection() {}
 
+        bool ConnectToServer(uint32_t uid = 0)
+        {
+            if (m_owner == Owner::SERVER)
+            {
+                if (m_socket.is_open())
+                {
+                    m_id = uid;
+                }
+            }
+        }
 
-        bool ConnectToServer(){};
-        bool Disconnect(){};
-        bool IsConnected(){};
+        bool Disconnect()
+        {
+            return false;
+        }
+
+        bool IsConnected()
+        {
+            return false;
+        }
+
+        uint32_t getId() { return m_id; }
 
     protected:
         boost::asio::ip::tcp::socket m_socket;
 
-        boost::asio::io_context& m_asioContext;
+        boost::asio::io_context &m_asioContext;
 
-        ThreadSafeQueue<Message<T> > m_messagesOut;
-        ThreadSafeQueue<Message<T> >& m_messagesIn; // provided from outside
+        ThreadSafeQueue<Message<T>> m_messagesOut;
+        ThreadSafeQueue<Message<T>> &m_messagesIn; // provided from outside
+
+        Owner m_owner;
+        uint32_t m_id = 0;
     };
 
 } // tcp_communication

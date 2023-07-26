@@ -14,34 +14,46 @@
 #include "basic/client_interface.h"
 #include "basic/server.h"
 
-enum class CustomMessage : uint32_t
+enum class CustomMessageTypes : uint32_t
 {
-    TYPE_1,
-    TYPE_2
+    SERVER_ACCEPT,
+    SERVER_DENY,
+    SERVER_PING,
+    MESSAGE_ALL,
+    SERVER_MESSAGE
+};
+
+class CustomServer : public tcp_communication::IServer<CustomMessageTypes>
+{
+public:
+    CustomServer(uint16_t port) :  tcp_communication::IServer<CustomMessageTypes>(port)
+    {}
+
+protected:
+    virtual bool onClientConnect(std::shared_ptr< tcp_communication::Connection<CustomMessageTypes>> client) override
+    {
+        return true;
+    }
+
+    virtual void onClientDisconnect(std::shared_ptr<tcp_communication::Connection<CustomMessageTypes>> client) override
+    {
+    }
+
+    virtual bool onMessage(std::shared_ptr<tcp_communication::Connection<CustomMessageTypes> > client,
+                           const tcp_communication::Message<CustomMessageTypes> &msg) override
+    {
+    }
 };
 
 int main()
 {
-    tcp_communication::Message<CustomMessage> msg;
-    msg.m_header.id = CustomMessage::TYPE_1;
+    CustomServer server(8080);
+    server.start();
 
-    int a = 1;
-    bool b = true;
-    float c = 3.14159f;
+    while(1)
+        server.update();
 
-    struct 
-    {
-        float x;
-        float y;
-    } d[5];
-
-    msg << a << b << c << d;
-    
-    a = 2;
-    b = false;
-    c = 4.14159f;
-
-    msg >> d >> c >> b >> a;    
+    // telnet localhost 8080
 
     return 0;
 }
