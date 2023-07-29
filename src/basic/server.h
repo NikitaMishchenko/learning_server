@@ -69,25 +69,24 @@ namespace tcp_communication
                     { 
                         std::cout << "[SERVER] New Connection success: " << socket.remote_endpoint() << "\n";
 
-                        /* testing
-                        std::shared_ptr<Connection<T>> = newConnection = 
-                            std::make_shared<Connection<T>>(Connection<T>::owner::server, m_asioContext, std::moove(socket), m_msgsIn);
+                        // testing
+                        std::shared_ptr<Connection<T>> newConnection = 
+                            std::make_shared<Connection<T>>(Connection<T>::Owner::SERVER, m_asioContext, std::move(socket), m_msgsIn);
                         
 
                         // possible connection deny
-                        if (onClientConnetc(newConnection))    
+                        if (onClientConnect(newConnection))    
                         {
                             m_connections.push_back(std::move(newConnection));
 
-                            m_connections.back()->ConnectToClient(m_clientIdCounter++);
+                            m_connections.back()->connectToClient(m_clientIdCounter++);
 
-                            std::cout << "[" << m_connections.back()->GetId() << "] Connection Approved\n";
+                            std::cout << "[" << m_connections.back()->getId() << "] Connection Approved\n";
                         }
                         else
                         {
                             std::cout << "[-----] Connection Denied\n";
                         }
-                        */
                     }
                     else
                     {

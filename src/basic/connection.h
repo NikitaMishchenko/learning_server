@@ -24,16 +24,27 @@ namespace tcp_communication
         Connection(Owner owner,
                    boost::asio::io_context &asioContext,
                    boost::asio::ip::tcp::socket socket,
-                   ThreadSafeQueue<OwnedMessage<T>> &msgQueue)
-            : m_asioContext(asioContext), m_socket(std::move(socket)), m_messagesIn(msgQueue)
+                   ThreadSafeQueue<OwnedMessage<T>> &msgQueueIn)
+            : m_asioContext(asioContext), m_socket(std::move(socket)), m_messagesIn(msgQueueIn)
         {
             m_owner = owner;
         }
         virtual ~Connection() {}
 
-        bool ConnectToServer(uint32_t uid = 0)
+        void connectToClient(uint32_t uid = 0)
         {
             if (m_owner == Owner::SERVER)
+            {
+                if (m_socket.is_open())
+                {
+                    m_id = uid;
+                }
+            } 
+        }
+
+        bool connectToServer(uint32_t uid = 0)
+        {
+            if (m_owner == Owner::CLIENET)
             {
                 if (m_socket.is_open())
                 {
@@ -42,12 +53,12 @@ namespace tcp_communication
             }
         }
 
-        bool Disconnect()
+        bool disconnect()
         {
             return false;
         }
 
-        bool IsConnected()
+        bool isConnected()
         {
             return false;
         }
@@ -60,9 +71,9 @@ namespace tcp_communication
         boost::asio::io_context &m_asioContext;
 
         ThreadSafeQueue<Message<T>> m_messagesOut;
-        ThreadSafeQueue<Message<T>> &m_messagesIn; // provided from outside
+        ThreadSafeQueue<OwnedMessage<T>> &m_messagesIn; // provided from outside
 
-        Owner m_owner;
+        Owner m_owner = Owner::SERVER;
         uint32_t m_id = 0;
     };
 
