@@ -163,6 +163,7 @@ namespace tcp_communication
 
         virtual bool onMessage(std::shared_ptr<Connection<T> > client, const Message<T> &msg)
         {
+            return false;
         }
 
     private:

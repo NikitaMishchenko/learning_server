@@ -28,6 +28,11 @@ namespace tcp_communication
                 boost::asio::ip::tcp::resolver resolver(m_context);
                 boost::asio::ip::tcp::resolver::results_type endpoints = resolver.resolve(host, std::to_string(port));
 
+                m_connectionPtr = std::make_unique<Connection<T>>(Connection<T>(Connection<T>::Owner::CLIENT), 
+                                                                                 m_context,
+                                                                                 boost::asio::ip::tcp::socket(m_context),
+                                                                                 m_messagesIn);
+                
                 m_connectionPtr->connectToServer(endpoints);
 
                 m_threadContext = std::thread([this]()
@@ -41,7 +46,7 @@ namespace tcp_communication
 
             return true;
         }
-        virtual bool disconnect()
+        virtual void disconnect()
         {
             if (isConnected())
                 disconnect();

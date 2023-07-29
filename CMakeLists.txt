@@ -6,7 +6,9 @@ include(CTest)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 add_subdirectory(tests)
-add_subdirectory(src)
+add_subdirectory(src/server)
+add_subdirectory(src/client)
+add_subdirectory(src/tcp_communication)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)

@@ -1,27 +1,12 @@
+#pragma once
+
 #include <iostream>
 
-#include <string>
-#include <thread>
-#include <chrono>
-
-#include <boost/system/error_code.hpp>
 #include <boost/asio.hpp>
-#include <boost/asio/ts/buffer.hpp>
-#include <boost/asio/ts/internet.hpp>
-#include <boost/asio/error.hpp>
 
-#include "basic/message.h"
-#include "basic/client_interface.h"
-#include "basic/server.h"
+#include "client_interface.h"
+#include "../custom_message_types.h"
 
-enum class CustomMessageTypes : uint32_t
-{
-    SERVER_ACCEPT,
-    SERVER_DENY,
-    SERVER_PING,
-    MESSAGE_ALL,
-    SERVER_MESSAGE
-};
 
 class CustomServer : public tcp_communication::IServer<CustomMessageTypes>
 {
@@ -42,18 +27,6 @@ protected:
     virtual bool onMessage(std::shared_ptr<tcp_communication::Connection<CustomMessageTypes> > client,
                            const tcp_communication::Message<CustomMessageTypes> &msg) override
     {
+        return true;
     }
 };
-
-int main()
-{
-    CustomServer server(8080);
-    server.start();
-
-    while(1)
-        server.update();
-
-    // telnet localhost 8080
-
-    return 0;
-}
