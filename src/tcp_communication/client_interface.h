@@ -72,7 +72,7 @@ namespace tcp_communication
         {
             if (isConnected())
             {
-                std::cout << "client: sending msg\n";
+                std::cout << "client: sending msg, headerId: " << int(msg.m_header.id) << "\n";
                 m_connectionPtr->send(msg);
             }
         }
