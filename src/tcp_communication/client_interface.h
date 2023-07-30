@@ -23,15 +23,13 @@ namespace tcp_communication
         {
             try
             {
-                m_connectionPtr = std::make_unique<Connection<T>>(); // todo
-
                 boost::asio::ip::tcp::resolver resolver(m_context);
                 boost::asio::ip::tcp::resolver::results_type endpoints = resolver.resolve(host, std::to_string(port));
 
-                m_connectionPtr = std::make_unique<Connection<T>>(Connection<T>(Connection<T>::Owner::CLIENT), 
-                                                                                 m_context,
-                                                                                 boost::asio::ip::tcp::socket(m_context),
-                                                                                 m_messagesIn);
+                m_connectionPtr = std::make_unique<Connection<T>>(Connection<T>::Owner::CLIENT, 
+                                                                  m_context,
+                                                                  boost::asio::ip::tcp::socket(m_context),
+                                                                  m_messagesIn);
                 
                 m_connectionPtr->connectToServer(endpoints);
 
@@ -40,12 +38,13 @@ namespace tcp_communication
             }
             catch (const std::exception &e)
             {
-                std::cerr << "Client connect excetrion occured: " << e.what() << '\n';
+                std::cerr << "Client connect exception occurred: " << e.what() << '\n';
                 return false;
             }
 
             return true;
         }
+
         virtual void disconnect()
         {
             if (isConnected())
@@ -62,9 +61,23 @@ namespace tcp_communication
         virtual bool isConnected()
         {
             return m_connectionPtr && m_connectionPtr->isConnected();
-        };
+        }
 
         virtual ThreadSafeQueue<OwnedMessage<T>> &incomingMsgs()
+        {
+            return m_messagesIn;
+        }
+
+        void send(const Message<T> msg)
+        {
+            if (isConnected())
+            {
+                std::cout << "client: sending msg\n";
+                m_connectionPtr->send(msg);
+            }
+        }
+
+        ThreadSafeQueue<OwnedMessage<T>>& getMsgsIn()
         {
             return m_messagesIn;
         }

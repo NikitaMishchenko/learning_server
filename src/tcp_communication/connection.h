@@ -17,8 +17,9 @@ namespace tcp_communication
     public:
         enum Owner
         {
+            CLIENT,
             SERVER,
-            CLIENET
+            UNKNOWN
         };
 
         Connection(Owner owner,
@@ -46,7 +47,7 @@ namespace tcp_communication
 
         void connectToServer(const boost::asio::ip::tcp::resolver::results_type& endpoints)
         {
-            if (m_owner == Owner::CLIENET)
+            if (m_owner == Owner::CLIENT)
             {
                 boost::asio::async_connect(m_socket, endpoints,
                                            [this](boost::system::error_code errCode, boost::asio::ip::tcp::endpoint endpoint)
@@ -89,6 +90,7 @@ namespace tcp_communication
 private:
     void readHeader()
     {
+        std::cout << "SERVER readHeader sizeOf(Header<T>): " << sizeof(Header<T>) << "\n";
         boost::asio::async_read(m_socket, boost::asio::buffer(&m_tmpMsgIn.m_header, sizeof(Header<T>)),
             [this](std::error_code errCode, std::size_t length)
             {
@@ -106,7 +108,7 @@ private:
                 }
                 else
                 {
-                    std::cout << "[" << m_id << "] Read Header Fail!\n";
+                    std::cout << "[" << m_id << "] Read Header Fail! errCode: " << errCode << "\n";
                     m_socket.close();
                 }
 
@@ -178,7 +180,8 @@ private:
 
     void writeBody()
     {
-        boost::asio::async_write(m_socket, boost::asio::buffer(&m_messagesOut.front().body.data, sizeof(m_messagesOut.front().body)),
+        boost::asio::async_write(m_socket, boost::asio::buffer(m_messagesOut.front().m_body.data(),
+                                                               sizeof(m_messagesOut.front().m_body)),
             [this](std::error_code errCode, std::size_t length)
             {
                 if (!errCode)
@@ -192,7 +195,7 @@ private:
                 }
                 else
                 {
-                    std::cout << "[" << m_id << "] Write Body Fail!\n";
+                    std::cout << "[" << m_id << "] Write Body Fail! errCode: " << errCode << "\n";
                     m_socket.close();
                 }
 

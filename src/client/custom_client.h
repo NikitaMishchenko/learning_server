@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <chrono>
 
 #include <boost/asio.hpp>
 
@@ -9,25 +10,29 @@
 #include "../custom_message_types.h"
 
 
-class CustomServer : public tcp_communication::IServer<CustomMessageTypes>
-{
-public:
-    CustomServer(uint16_t port) :  tcp_communication::IServer<CustomMessageTypes>(port)
-    {}
-
-protected:
-    virtual bool onClientConnect(std::shared_ptr< tcp_communication::Connection<CustomMessageTypes>> client) override
+class CustomClient : public tcp_communication::IClient<CustomMessageTypes>
+{ 
+public:    
+    virtual bool onClientConnect(std::shared_ptr<tcp_communication::Connection<CustomMessageTypes>> client)
     {
+        tcp_communication::Message<CustomMessageTypes> msg;
+		msg.m_header.id = CustomMessageTypes::SERVER_ACCEPT;
+		client->send(msg);
+
         return true;
     }
 
-    virtual void onClientDisconnect(std::shared_ptr<tcp_communication::Connection<CustomMessageTypes>> client) override
+    void pingServer()
     {
+        tcp_communication::Message<CustomMessageTypes> msg;
+        msg.m_header.id = CustomMessageTypes::SERVER_PING;
+
+        std::chrono::system_clock::time_point timeNow = std::chrono::system_clock::now();
+
+        msg << timeNow;
+
+        this->send(msg);
     }
 
-    virtual bool onMessage(std::shared_ptr<tcp_communication::Connection<CustomMessageTypes> > client,
-                           const tcp_communication::Message<CustomMessageTypes> &msg) override
-    {
-        return true;
-    }
+private:
 };

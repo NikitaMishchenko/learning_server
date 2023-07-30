@@ -154,16 +154,18 @@ namespace tcp_communication
     protected:
         virtual bool onClientConnect(std::shared_ptr<Connection<T>> client)
         {
+            throw "no implementation!";   
             return false;
         }
 
         virtual void onClientDisconnect(std::shared_ptr<Connection<T>> client)
         {
+            throw "no implementation!";  
         }
 
-        virtual bool onMessage(std::shared_ptr<Connection<T> > client, const Message<T> &msg)
+        virtual void onMessage(std::shared_ptr<Connection<T> > client, const Message<T> &msg)
         {
-            return false;
+            throw "no implementation!";
         }
 
     private:
