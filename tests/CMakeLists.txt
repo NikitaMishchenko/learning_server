@@ -5,9 +5,10 @@ project(tests)
 find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 
-add_executable(runTests main.cpp)
+add_executable(runTests main.cpp tests.cpp)
 target_link_libraries(runTests
                      ${GTEST_LIBRARIES}
+                     tcpcommunication
                      -pthread
                      -lpthread)
 

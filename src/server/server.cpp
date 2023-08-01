@@ -22,9 +22,15 @@ int main()
     CustomServer server(8080);
     server.start();
 
-    while(1)
-        server.update();
-
+    try
+    {
+        while(1)
+            server.update();
+    }
+    catch(...)
+    {
+        std::cerr << "excetion thrown in main SERVER\n";
+    }
     // telnet localhost 8080
 
     return 0;

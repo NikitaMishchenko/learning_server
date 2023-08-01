@@ -29,9 +29,14 @@ public:
 
         std::chrono::system_clock::time_point timeNow = std::chrono::system_clock::now();
 
+        std::cout << "sizeOf body = " << sizeof(timeNow) << "\n";
+
         msg << timeNow;
 
         this->send(msg);
+
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(1000ms);
     }
 
 private:

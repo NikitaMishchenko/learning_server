@@ -30,11 +30,14 @@ namespace tcp_communication
         {
             m_owner = owner;
         }
+
         virtual ~Connection() {}
 
         void connectToClient(uint32_t uid = 0)
         {
-            if (m_owner == Owner::SERVER)
+            std::cout << "Connection: connectToClient() uid = " << uid << "\n";
+
+            if (Owner::SERVER == m_owner)
             {
                 if (m_socket.is_open())
                 {
@@ -42,29 +45,34 @@ namespace tcp_communication
 
                     readHeader();
                 }
-            } 
+                else
+                {
+                    std::cout << "connectToClient: socket not opened!\n";
+                }
+            }
         }
 
-        void connectToServer(const boost::asio::ip::tcp::resolver::results_type& endpoints)
+        void connectToServer(const boost::asio::ip::tcp::resolver::results_type &endpoints)
         {
-            if (m_owner == Owner::CLIENT)
+            std::cout << "Connection: connectToServer():\n";
+            if (Owner::CLIENT == m_owner)
             {
                 boost::asio::async_connect(m_socket, endpoints,
                                            [this](boost::system::error_code errCode, boost::asio::ip::tcp::endpoint endpoint)
                                            {
-                                                if(!errCode)
-                                                {
-                                                    readHeader();
-                                                }
+                                               if (!errCode)
+                                               {
+                                                   readHeader();
+                                               }
                                            });
-
             }
         }
 
         void disconnect()
         {
             if (isConnected())
-                boost::asio::post(m_asioContext, [this]() {m_socket.close();});
+                boost::asio::post(m_asioContext, [this]()
+                                  { m_socket.close(); });
         }
 
         bool isConnected() const
@@ -72,138 +80,157 @@ namespace tcp_communication
             return m_socket.is_open();
         }
 
-        uint32_t getId() { return m_id; }
-
-        void send(const Message<T>& msg)
+        uint32_t getId() const
         {
-            boost::asio::post(m_asioContext, 
-                [this, msg]()
-                {
-                    bool isWritingMessageNow = m_messagesOut.size();
-                    m_messagesOut.push_back(msg);
-                    
-                    if (isWritingMessageNow)
-                        writeHeader();
-                });
+            return m_id;
         }
 
-private:
-    void readHeader()
-    {
-        std::cout << "SERVER readHeader sizeOf(Header<T>): " << sizeof(Header<T>) << "\n";
-        boost::asio::async_read(m_socket, boost::asio::buffer(&m_tmpMsgIn.m_header, sizeof(Header<T>)),
-            [this](std::error_code errCode, std::size_t length)
-            {
-                if (!errCode)
-                {
-                    if (m_tmpMsgIn.m_header.size)
-                    {
-                        m_tmpMsgIn.m_body.resize(m_tmpMsgIn.m_header.size);
-                        readBody();
-                    }
-                    else
-                    {
-                        addToIncomingMessageQueue();
-                    }
-                }
-                else
-                {
-                    std::cout << "[" << m_id << "] Read Header Fail! errCode: " << errCode << "\n";
-                    m_socket.close();
-                }
-
-            });
-    }
-
-    void readBody()
-    {
-        boost::asio::async_read(m_socket, boost::asio::buffer(m_tmpMsgIn.m_body.data(), m_tmpMsgIn.m_body.size()),
-            [this](std::error_code errCode, std::size_t length)
-            {
-                if (!errCode)
-                {
-                    addToIncomingMessageQueue();
-                }
-                else
-                {
-                    std::cout << "[" << m_id << "] Read Body Fail!\n";
-                    m_socket.close();
-                }
-
-            });
-    }
-
-
-    void addToIncomingMessageQueue()
-    {
-        if (Connection::Owner::SERVER == m_owner)
+        void send(const Message<T> &msg)
         {
-            m_messagesIn.push_back({this->shared_from_this(), m_tmpMsgIn});
-        }
-        else
-        {
-            m_messagesIn.push_back({nullptr, m_tmpMsgIn});
+            std::cout << "Connection: send() " << toString(msg.m_header.id) << " size: " << msg.m_header.size << "\n";
+
+            boost::asio::post(m_asioContext,
+                              [this, msg]()
+                              {
+                                  bool isWritingMessageNow = m_messagesOut.size();
+                                  m_messagesOut.push_back(msg);
+
+                                  if (!isWritingMessageNow)
+                                      writeHeader();
+                              });
         }
 
-        readHeader(); // continue rading
-    }
+    private:
+        void readHeader()
+        {
+            std::cout << "Connection: readHeader()\n";
 
-    void writeHeader()
-    {
-        boost::asio::async_write(m_socket, boost::asio::buffer(&m_messagesOut.front().m_header, sizeof(m_messagesOut.front().m_header)),
-            [this](std::error_code errCode, std::size_t length)
+            boost::asio::async_read(m_socket, boost::asio::buffer(&m_tmpMsgIn.m_header, sizeof(Header<T>)),
+                                    [this](std::error_code errCode, std::size_t length)
+                                    {
+                                        if (!errCode)
+                                        {
+                                            std::cout << "[" << m_id << "] readHeader() "
+                                                      << "size: " << m_tmpMsgIn.m_header.size << ", type: " << toString(m_tmpMsgIn.m_header.id) << "\n";
+                                            if (m_tmpMsgIn.m_header.size)
+                                            {
+                                                std::cout << "We have a body to read! heder assured size: " << m_tmpMsgIn.m_header.size << "\n";
+
+                                                m_tmpMsgIn.m_body.resize(m_tmpMsgIn.m_header.size);
+                                                readBody();
+                                            }
+                                            else
+                                            {
+                                                std::cout << "bodyless msg " << toString(m_tmpMsgIn.m_header.id);
+                                                addToIncomingMessageQueue();
+                                            }
+                                        }
+                                        else
+                                        {
+                                            std::cout << "[" << m_id << "] Read Header Fail! errCode: " << errCode << " Closing socket...\n";
+                                            m_socket.close();
+                                        }
+                                    });
+        }
+
+        void readBody()
+        {
+            std::cout << "Connection: readBody()\n";
+
+            boost::asio::async_read(m_socket, boost::asio::buffer(m_tmpMsgIn.m_body.data(), m_tmpMsgIn.m_body.size()),
+                                    [this](std::error_code errCode, std::size_t length)
+                                    {
+                                        if (!errCode)
+                                        {
+                                            addToIncomingMessageQueue();
+                                        }
+                                        else
+                                        {
+                                            std::cout << "[" << m_id << "] Read Body Fail!\n";
+                                            m_socket.close();
+                                        }
+                                    });
+        }
+
+        void addToIncomingMessageQueue()
+        {
+            std::cout << "Connection: addToIncomingMessageQueue()\n";
+
+            if (Connection::Owner::SERVER == m_owner)
             {
-                if (!errCode)
-                {
-                    if (m_messagesOut.front().size())
-                    {
-                        writeBody();
-                    }
-                    else
-                    {
-                        m_messagesOut.pop_front();
+                std::cout << "appending msg to msgIn SERVER\n";
 
-                        if (!m_messagesOut.empty())
-                        {
-                            writeHeader();
-                        }   
-                    }
-                }
-                else
-                {
-                    std::cout << "[" << m_id << "] Write Header Fail!\n";
-                    m_socket.close();
-                }
+                m_messagesIn.push_back({this->shared_from_this(), m_tmpMsgIn});
 
-            });
-    }
-
-    void writeBody()
-    {
-        boost::asio::async_write(m_socket, boost::asio::buffer(m_messagesOut.front().m_body.data(),
-                                                               sizeof(m_messagesOut.front().m_body)),
-            [this](std::error_code errCode, std::size_t length)
+                std::cout << "now " << m_messagesIn.size() << " msgs in queue\n";
+                // std::cout << "msgIn:" << m_tmpMsgIn << "\n";
+            }
+            else
             {
-                if (!errCode)
-                {
-                    m_messagesOut.pop_front();
+                std::cout << "appending msg to msgIn CLIENT\n";
+                m_messagesIn.push_back({nullptr, m_tmpMsgIn});
+                std::cout << "now " << m_messagesIn.size() << "msgs in queue\n";
+            }
 
-                    if (!m_messagesOut.empty())
-                    {
-                        writeHeader();
-                    }   
-                }
-                else
-                {
-                    std::cout << "[" << m_id << "] Write Body Fail! errCode: " << errCode << "\n";
-                    m_socket.close();
-                }
+            readHeader(); // continue reading
+        }
 
-            });
-    }
+        void writeHeader()
+        {
+            std::cout << "Connection: writeHeader() \n";
+            boost::asio::async_write(m_socket, boost::asio::buffer(&m_messagesOut.front().m_header, sizeof(m_messagesOut.front().m_header)),
+                                     [this](std::error_code errCode, std::size_t length)
+                                     {
+                                         if (!errCode)
+                                         {
+                                             if (m_messagesOut.front().m_body.size())
+                                             {
+                                                 std::cout << "m_messagesOut.m_body.size(): " << m_messagesOut.front().m_body.size() << "\n";
+                                                 writeBody();
+                                             }
+                                             else
+                                             {
+                                                 m_messagesOut.pop_front();
 
+                                                 if (!m_messagesOut.empty())
+                                                 {
+                                                     writeHeader();
+                                                 }
+                                             }
+                                         }
+                                         else
+                                         {
+                                             std::cout << "[" << m_id << "] Write Header Fail!\n";
+                                             m_socket.close();
+                                         }
+                                     });
+        }
 
-protected:
+        void writeBody()
+        {
+            std::cout << "Connection: writeBody()\n";
+
+            boost::asio::async_write(m_socket, boost::asio::buffer(m_messagesOut.front().m_body.data(), sizeof(m_messagesOut.front().m_body)),
+                                     [this](std::error_code errCode, std::size_t length)
+                                     {
+                                         if (!errCode)
+                                         {
+                                             m_messagesOut.pop_front();
+
+                                             if (!m_messagesOut.empty())
+                                             {
+                                                 writeHeader();
+                                             }
+                                         }
+                                         else
+                                         {
+                                             std::cout << "[" << m_id << "] Write Body Fail! errCode: " << errCode << "\n";
+                                             m_socket.close();
+                                         }
+                                     });
+        }
+
+    protected:
         boost::asio::ip::tcp::socket m_socket;
 
         boost::asio::io_context &m_asioContext;

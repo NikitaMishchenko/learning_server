@@ -31,6 +31,7 @@ namespace tcp_communication
                                                                   boost::asio::ip::tcp::socket(m_context),
                                                                   m_messagesIn);
                 
+                std::cout << "connect to server: host: " << host << ", port: " << port << "\n";
                 m_connectionPtr->connectToServer(endpoints);
 
                 m_threadContext = std::thread([this]()
@@ -72,8 +73,12 @@ namespace tcp_communication
         {
             if (isConnected())
             {
-                std::cout << "client: sending msg, headerId: " << int(msg.m_header.id) << "\n";
-                m_connectionPtr->send(msg);
+                std::cout << "client: sending msg " << toString(msg.m_header.id) << "\n";
+                m_connectionPtr->send(msg); // fixme extr byte
+            }
+            else
+            {
+                std::cout << "client: sending, not conneted!\n";
             }
         }
 

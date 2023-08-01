@@ -33,7 +33,6 @@ namespace tcp_communication
                 waitForClientConnection(); // work before
 
                 m_contextThread = std::thread([this](){
-                                                        std::cout << "waiting for clients...\n";
                                                         m_asioContext.run();
                                                      });
             
@@ -60,7 +59,7 @@ namespace tcp_communication
         // for ASIO context
         void waitForClientConnection()
         {
-            std::cout << "waitForClientConnection entry\n";
+            std::cout << "[SERVER] waitForClientConnection entry\n\n";
 
             m_asioAcceptor.async_accept(
                 [this](boost::system::error_code errCode, boost::asio::ip::tcp::socket socket)
@@ -140,9 +139,12 @@ namespace tcp_communication
         // handle incomming message
         void update(size_t nMaxMessages = -1) ///< max at default
         {
+            std::cout << "Server: update()\n";
             size_t nMessageCount = 0;
             while (nMessageCount < nMaxMessages && !m_msgsIn.empty())
             {
+                std::cout << "dequeuing msgsIn, nMessageCount: " << nMessageCount << ", nMaxMessages = " << nMaxMessages << "\n";
+
                 auto msg = m_msgsIn.pop_front();
 
                 onMessage(msg.remote, msg.msg); // pass to msg hanler

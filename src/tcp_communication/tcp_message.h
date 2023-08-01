@@ -12,7 +12,7 @@ namespace tcp_communication
     struct Header
     {
         T id;
-        uint32_t size = 0; ///< total size of corresponding message
+        uint32_t size = 0; ///< total size of corresponding message (header + body)
     };
 
     template<typename T>
@@ -30,7 +30,7 @@ namespace tcp_communication
 
         friend std::ostream& operator << (std::ostream& os, const Message<T>& msg)
         {
-            os << "ID:" << int(msg.m_header.id) << " Size:" << msg.m_header.size();
+            os << "ID:" << int(msg.m_header.id) << " Size:" << msg.m_header.size;
             return os;
         }
         
@@ -64,6 +64,13 @@ namespace tcp_communication
             msg.m_header.size = msg.size();
 
             return msg;
+        }
+
+        std::string toString()
+        {
+            std::stringstream ss;
+
+            return ss.str();
         }
 
         Header<T> m_header;
