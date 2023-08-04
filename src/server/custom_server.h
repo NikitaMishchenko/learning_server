@@ -18,13 +18,14 @@ protected:
     virtual bool onClientConnect(std::shared_ptr<tcp_communication::Connection<CustomMessageTypes>> client) override
     {
         std::cout << "CustomServer onClientConnect() id: " << client->getId() << "\n";
+        std::cout << "sending connection approve to CLIENT\n";
+
         tcp_communication::Message<CustomMessageTypes> msg;
 		
         msg.m_header.id = CustomMessageTypes::SERVER_ACCEPT;
-		client->send(msg);
+		client->send(msg); // connection settled
         
         return true;
-
     }
 
     virtual void onClientDisconnect(std::shared_ptr<tcp_communication::Connection<CustomMessageTypes>> client) override
@@ -35,7 +36,7 @@ protected:
     virtual void onMessage(std::shared_ptr<tcp_communication::Connection<CustomMessageTypes>> client,
                            const tcp_communication::Message<CustomMessageTypes> &msg) override
     {
-        std::cout << "CustomServer onMessage()\n";
+        std::cout << "CustomServer onMessage()," << toString(msg.m_header.id) << "\n";
 
         switch (msg.m_header.id)
         {

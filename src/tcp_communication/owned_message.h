@@ -12,7 +12,7 @@ namespace tcp_communication
     class Connection;
 
     template<typename T>
-    struct OwnedMessage : public Message<T>
+    struct OwnedMessage
     {
         OwnedMessage(std::shared_ptr<Connection<T>> connection, Message<T> msg_)
             : remote(connection), msg(msg_)

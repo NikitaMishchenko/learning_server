@@ -32,10 +32,10 @@ bool doWork(CustomClient &client, char key)
         if (!client.incomingMsgs().empty())
         {
             std::cout << "incoming message: " 
-                      << "header id: " <<  int(client.incomingMsgs().back().m_header.id)
-                      << "header size: " << client.incomingMsgs().back().m_header.size
+                      << "header id: " <<  int(client.incomingMsgs().back().msg.m_header.id)
+                      << "header size: " << client.incomingMsgs().back().msg.m_header.size
                       << "body: ";
-            for (auto& k : client.incomingMsgs().back().m_body) 
+            for (auto& k : client.incomingMsgs().back().msg.m_body) 
                 std::cout << k;
             std::cout << "\n";
 

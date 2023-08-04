@@ -20,7 +20,7 @@ namespace tcp_communication
     {
         size_t size() const
         {
-            return sizeof(m_header) + m_body.size();
+            return m_body.size(); // sizeof(m_header) + 
         }
 
         void reserveBody(size_t i)
@@ -39,13 +39,18 @@ namespace tcp_communication
         {
             static_assert(std::is_standard_layout<DataType>::value, "Data is too complex to ");
 
-            size_t msgSize = msg.m_body.size();
+            const size_t initialBodySize = msg.m_body.size();
+            const size_t newBodySize = initialBodySize + sizeof(DataType);
 
-            msg.m_body.resize(msg.m_body.size() + sizeof(DataType));
+            std::cout << "msg.m_body.size() = " << initialBodySize << "\n";
+            msg.m_body.resize(newBodySize);
+            std::cout << "new msg.m_body.size() = " << newBodySize << "\n";
 
-            std::memcpy(msg.m_body.data() + msgSize, &data, sizeof(DataType));
+            std::memcpy(msg.m_body.data() + (newBodySize - initialBodySize), &data, (newBodySize - initialBodySize));
 
-            msg.m_header.size = msg.size();
+            msg.m_header.size = newBodySize;
+
+            std::cout << "header stored size = " << msg.m_header.size << "\n";
 
             return msg;
         }

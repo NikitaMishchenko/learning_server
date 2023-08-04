@@ -92,22 +92,27 @@ namespace tcp_communication
             boost::asio::post(m_asioContext,
                               [this, msg]()
                               {
+                                  std::cout << "send() posting... msg: " << toString(msg.m_header.id) << ", msgsOut.size() = " << m_messagesOut.size() << "\n";
                                   bool isWritingMessageNow = m_messagesOut.size();
                                   m_messagesOut.push_back(msg);
 
                                   if (!isWritingMessageNow)
-                                      writeHeader();
+                                  {
+                                        writeHeader();
+                                        std::cout << "\n";
+                                  }
                               });
         }
 
     private:
         void readHeader()
-        {
+        {  
             std::cout << "Connection: readHeader()\n";
 
             boost::asio::async_read(m_socket, boost::asio::buffer(&m_tmpMsgIn.m_header, sizeof(Header<T>)),
                                     [this](std::error_code errCode, std::size_t length)
                                     {
+                                        std::cout << "readHeaderHandler errCode: " << errCode.message() << ", length: " << length << "\n";
                                         if (!errCode)
                                         {
                                             std::cout << "[" << m_id << "] readHeader() "
@@ -116,18 +121,19 @@ namespace tcp_communication
                                             {
                                                 std::cout << "We have a body to read! heder assured size: " << m_tmpMsgIn.m_header.size << "\n";
 
-                                                m_tmpMsgIn.m_body.resize(m_tmpMsgIn.m_header.size);
+                                                m_tmpMsgIn.m_body.resize(m_tmpMsgIn.m_header.size); // allocate enough space and pass the buck
                                                 readBody();
                                             }
                                             else
                                             {
-                                                std::cout << "bodyless msg " << toString(m_tmpMsgIn.m_header.id);
+                                                std::cout << "bodyless msg " << toString(m_tmpMsgIn.m_header.id) << "\n";
                                                 addToIncomingMessageQueue();
                                             }
                                         }
                                         else
                                         {
-                                            std::cout << "[" << m_id << "] Read Header Fail! errCode: " << errCode << " Closing socket...\n";
+                                            std::cout << "expected propper response\n";
+                                            std::cout << "[" << m_id << "] Read Header Fail! errCode: " << errCode << " Closing socket...\n\n";
                                             m_socket.close();
                                         }
                                     });
@@ -146,7 +152,8 @@ namespace tcp_communication
                                         }
                                         else
                                         {
-                                            std::cout << "[" << m_id << "] Read Body Fail!\n";
+                                            std::cout << "expected propper response\n";
+                                            std::cout << "[" << m_id << "] Read Body Fail!\n\n";
                                             m_socket.close();
                                         }
                                     });
@@ -181,11 +188,13 @@ namespace tcp_communication
             boost::asio::async_write(m_socket, boost::asio::buffer(&m_messagesOut.front().m_header, sizeof(m_messagesOut.front().m_header)),
                                      [this](std::error_code errCode, std::size_t length)
                                      {
+                                        std::cout << "writeHeaderHandler errCode: " << errCode.message() << ", length: " << length << "\n";
                                          if (!errCode)
                                          {
                                              if (m_messagesOut.front().m_body.size())
                                              {
-                                                 std::cout << "m_messagesOut.m_body.size(): " << m_messagesOut.front().m_body.size() << "\n";
+                                                 std::cout << toString(m_messagesOut.front().m_header.id) << ","
+                                                           << "m_messagesOut.m_body.size(): " << m_messagesOut.front().m_body.size() << "\n";
                                                  writeBody();
                                              }
                                              else
@@ -194,7 +203,8 @@ namespace tcp_communication
 
                                                  if (!m_messagesOut.empty())
                                                  {
-                                                     writeHeader();
+                                                    std::cout << "no msgs out in queue, starting to write new header\n";
+                                                    writeHeader();
                                                  }
                                              }
                                          }
@@ -210,24 +220,26 @@ namespace tcp_communication
         {
             std::cout << "Connection: writeBody()\n";
 
-            boost::asio::async_write(m_socket, boost::asio::buffer(m_messagesOut.front().m_body.data(), sizeof(m_messagesOut.front().m_body)),
-                                     [this](std::error_code errCode, std::size_t length)
-                                     {
-                                         if (!errCode)
-                                         {
-                                             m_messagesOut.pop_front();
+            boost::asio::async_write(m_socket,
+                                     boost::asio::buffer(m_messagesOut.front().m_body.data(),
+                                                         m_messagesOut.front().m_header.size),
+                                        [this](std::error_code errCode, std::size_t length)
+                                        {
+                                            if (!errCode)
+                                            {
+                                                m_messagesOut.pop_front();
 
-                                             if (!m_messagesOut.empty())
-                                             {
-                                                 writeHeader();
-                                             }
-                                         }
-                                         else
-                                         {
-                                             std::cout << "[" << m_id << "] Write Body Fail! errCode: " << errCode << "\n";
-                                             m_socket.close();
-                                         }
-                                     });
+                                                if (!m_messagesOut.empty())
+                                                {
+                                                    writeHeader();
+                                                }
+                                            }
+                                            else
+                                            {
+                                                std::cout << "[" << m_id << "] Write Body Fail! errCode: " << errCode << "\n";
+                                                m_socket.close();
+                                            }
+                                        });
         }
 
     protected:

@@ -30,7 +30,7 @@ namespace tcp_communication
 
             try
             {
-                waitForClientConnection(); // work before
+                waitForClientConnection(); // enter to response processing
 
                 m_contextThread = std::thread([this](){
                                                         m_asioContext.run();
@@ -80,7 +80,9 @@ namespace tcp_communication
 
                             m_connections.back()->connectToClient(m_clientIdCounter++);
 
-                            std::cout << "[" << m_connections.back()->getId() << "] Connection Approved\n";
+                            std::cout << "new connection to client saved\n";
+
+                            std::cout << "[" << m_connections.back()->getId() << "] Connection Approved\n\n";
                         }
                         else
                         {
@@ -139,14 +141,21 @@ namespace tcp_communication
         // handle incomming message
         void update(size_t nMaxMessages = -1) ///< max at default
         {
-            std::cout << "Server: update()\n";
+            // std::cout << "Server: update()\n";
             size_t nMessageCount = 0;
             while (nMessageCount < nMaxMessages && !m_msgsIn.empty())
             {
-                std::cout << "dequeuing msgsIn, nMessageCount: " << nMessageCount << ", nMaxMessages = " << nMaxMessages << "\n";
+
+                std::cout << "dequeuing msgsIn, nMessageCount: " << nMessageCount << "\n";
 
                 auto msg = m_msgsIn.pop_front();
-
+                
+                std::cout << "passing to onMsg " << toString(msg.msg.m_header.id) << ", size: " << msg.msg.m_header.size << "\n";
+                // std::cout << "on connections " << toString(msg.msg.m_header.id) << ", size: " << msg.msg.m_header.size << "\n";
+                // m_connections.back()->m_messagesIn->msg;
+                //std::cout << "remote Id: " << msg.remotegetId() << "\n";
+                
+                
                 onMessage(msg.remote, msg.msg); // pass to msg hanler
 
                 nMessageCount++;

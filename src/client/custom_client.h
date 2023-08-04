@@ -24,6 +24,8 @@ public:
 
     void pingServer()
     {
+        std::cout << "CustomClient pingServer()\n";
+
         tcp_communication::Message<CustomMessageTypes> msg;
         msg.m_header.id = CustomMessageTypes::SERVER_PING;
 
@@ -32,6 +34,8 @@ public:
         std::cout << "sizeOf body = " << sizeof(timeNow) << "\n";
 
         msg << timeNow;
+
+        std::cout << "msg Header assures size: " << msg.m_header.size << "\n";
 
         this->send(msg);
 
